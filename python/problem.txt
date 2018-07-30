@@ -1,0 +1,276 @@
+﻿#include <stdio.h>
+#include <stdlib.h>
+
+typedef    char element;
+#define M 'm'
+#define C 'c'
+
+//���� ����� ����
+typedef struct {
+    element data;
+    struct MACNode *link;
+}MACNode;
+
+//���� ����
+typedef struct {
+    MACNode *top;     // ��� ������
+    int length;        // ������ ����
+}MACType;
+
+//�� ������ ����
+typedef struct {
+    MACType* missionary;
+    MACType* cannibal;
+}MACState;
+
+typedef struct {
+    MACState right_ground;          //������ �� ����
+    MACState left_ground;           //���� �� ����
+    int count;                      //�� ���� �̵����� �������� 
+}Plan;
+
+void initstack(MACType *stack);        //���� �ʱ�ȭ
+int is_empty(MACType *s);        //���� ���� ���� �Լ�
+int safety_check(MACState *init, MACState *goal);        //�������� �˻�
+int goal_check(MACState *goal, int num);    //�����ߴ��� �˻�
+void push(MACType *s, element data);    //���� ����
+element pop(MACType *s);        //���� ����
+void show_state(MACState init, MACState goal);        //���� ���
+char is_LR(int a);        //��Ʈ ��ġ �Ǻ� �Լ�
+void mc_move(MACType* mc1, MACType* mc2, int ivalue);        //mc1�� element�� pop, mc2�� push
+void find_solution(MACState *init, MACState *goal, int num, int *count, int boat);        //������� �Է��� �޾� ������, �������� ����, ���������� �̵�
+
+
+void main() {
+    Plan plan;
+    int num;              //N���� ������� ������    
+    int boat;
+    plan.left_ground.missionary = (MACType *)malloc(sizeof(MACType));        //MACType �����Ҵ�
+    plan.left_ground.cannibal = (MACType *)malloc(sizeof(MACType));
+    plan.right_ground.missionary = (MACType *)malloc(sizeof(MACType));
+    plan.right_ground.cannibal = (MACType *)malloc(sizeof(MACType));
+
+
+
+    plan.count = 0;
+    initstack(plan.left_ground.missionary);            //�ʱ�ȭ
+    initstack(plan.left_ground.cannibal);
+    initstack(plan.right_ground.missionary);
+    initstack(plan.right_ground.cannibal);
+
+
+    while (1) {                //������� ������ �ο�(n)�� �Է¹޾Ƽ� ��Ʈ���� �ο� �Ǻ�
+        printf("�� ���� ������� �������� �̵��� ���ΰ���? : ");        //n�� �Է� ������ �� �ο��� = n +n
+        scanf("%d", &num);
+        if (num == 1 || num == 2 || num == 3) {                    //1,2,3���� ��� ��Ʈ ���� �ο� 2��
+            printf("��Ʈ���� �ִ� 2���� ž�� �����մϴ�.\n\n");
+            boat = 2;
+            break;
+        }
+        else if (num == 4 || num == 5) {                //4,5���� ��� ��Ʈ ���� �ο� 3��
+            printf("��Ʈ���� �ִ� 3���� ž�� �����մϴ�.\n\n");
+            boat = 3;
+            break;
+        }
+        else if (num > 6) {                                //6�� �̻��� ��� ��Ʈ ���� �ο� 4��
+            printf("��Ʈ���� �ִ� 4���� ž�� �����մϴ�.\n\n");
+            boat = 4;
+            break;
+        }
+    }
+
+    //�ʱ⿡ N���� ������� �������� ������ ���� ����
+    for (int i = 0; i < num; i++) {
+        push(plan.right_ground.cannibal, C);
+        push(plan.right_ground.missionary, M);
+    }
+    printf("�ʱ����\n\n");
+
+    show_state(plan.right_ground, plan.left_ground);
+
+    printf("******************�̵� ����******************\n\n\n");
+    find_solution(&plan.right_ground, &plan.left_ground, num, &plan.count, boat);
+
+    printf("******************�̵� ����******************\n\n\n");
+
+    printf("�� �̵� Ƚ��: %d�� \n", plan.count);
+
+}
+
+
+
+void initstack(MACType *stack) {
+    stack->top = NULL;
+    stack->length = 0;
+}
+
+
+int is_empty(MACType *s) {
+    return (s->length == 0);
+}
+
+
+int safety_check(MACState *init, MACState *goal) {
+    if (init->missionary->length < init->cannibal->length)
+    {
+        if (init->missionary->length == 0)
+            return 1;
+        printf("������ ������ �����簡 ���������� ��Ƹ����ϴ�.\n");
+        return 0;
+    }
+    if (goal->missionary->length < goal->cannibal->length)
+    {
+        if (goal->missionary->length == 0)
+            return 1;
+        printf("���� ������ �����簡 ���������� ��Ƹ����ϴ�. \n");
+        return 0;
+    }
+    else
+        return 1;
+}
+
+
+int goal_check(MACState *goal, int num) {
+    if (goal->missionary->length == num && goal->cannibal->length == num)
+        return 1;
+    else
+        return 0;
+}
+
+
+void push(MACType *s, element data)
+{
+    MACNode *temp = (MACNode *)malloc(sizeof(MACNode));
+    if (temp == NULL)
+    {
+        fprintf(stderr, "�޸� �Ҵ� ���� \n");
+
+        return;
+    }
+
+    else
+    {
+        temp->data = data;
+        temp->link = s->top;
+        s->top = temp;
+        s->length++;
+    }
+}
+
+
+element pop(MACType *s) {
+    if (is_empty(s))
+    {
+        fprintf(stderr, "������ ������� \n");
+        return;
+    }
+    else
+    {
+        MACNode *temp = s->top;
+        element item = temp->data;
+        s->top = s->top->link;
+        s->length--;
+        free(temp);
+        return item;
+    }
+}
+
+
+void show_state(MACState init, MACState goal) {
+    printf("left_plan : ");
+
+    for (int i = 1; i <= goal.missionary->length; i++) {     //������ ���̸�ŭ �ش� ���� ���
+        if (is_empty(goal.missionary))
+            break;
+        printf("%c", M);
+    }
+    printf("  ");
+
+    for (int i = 1; i <= goal.cannibal->length; i++) {
+        if (is_empty(goal.cannibal))
+            break;
+        printf("%c", C);
+    }
+    printf("\t\t right_plan : ");
+
+    for (int i = 1; i <= init.missionary->length; i++) {
+        if (is_empty(init.missionary))
+            break;
+        printf("%c", M);
+    }
+    printf("   ");
+
+    for (int i = 1; i <= init.cannibal->length; i++) {
+        if (is_empty(init.cannibal))
+            break;
+        printf("%c", C);
+    }
+    printf("\n\n");
+}
+
+char is_LR(int a) {                
+    return (a % 2 == 0) ? 'R' : 'L';
+}
+
+
+void mc_move(MACType* mc1, MACType* mc2, int ivalue) {
+    for (int i = 0; i < ivalue; i++)
+        push(mc2, pop(mc1));
+}
+
+
+void find_solution(MACState *init, MACState *goal, int num, int *count, int boat) {
+    int b_m;
+    int b_c;
+    int lr = 0;        //��Ʈ��ġ �Ǻ� ����(¦�� : ������, Ȧ�� : ����)
+    while (1) {
+        printf("���� ��Ʈ ��ġ : %c \n�ǳʰ� �ο�(��Ʈ �ο� : %d)�� �����ּ���.(������, ������) ", is_LR(lr), boat);
+        scanf(" %d %d", &b_m, &b_c);
+
+        if (b_m + b_c > boat) {                    //��Ʈ�� �ο����� �Է� ���� ���� ������ �ٽ� �Է¹���
+            printf("��Ʈ�� �ο� �ѵ��� �ʰ��Ͽ����ϴ�\n\n");
+            continue;
+        }
+
+        if (is_LR(lr) == 'R') {                        //�����ʿ��� �������� �̵�
+            if (init->cannibal->length < b_c || init->missionary->length < b_m) {
+                printf("�ο��� ���� �ʽ��ϴ�.\n");
+                continue;
+            }
+            mc_move(init->cannibal, goal->cannibal, b_c);            //������ �̵�
+            mc_move(init->missionary, goal->missionary, b_m);    //������ �̵�
+            lr++;
+            if (safety_check(init, goal) == 1) {                //�������� �˻��� 
+                show_state(*init, *goal);                        //�����ϴٸ� ���� ���, count����
+                (*count)++;
+            }
+            else {                                                    //�̵� ���н� ���α׷� ����
+                printf("�̵��� �����Ͽ����ϴ�.\n");
+                exit(1);
+            }
+        }
+
+        else if (is_LR(lr) == 'L') {                    //���ʿ��� ���������� �̵�
+            if (goal->cannibal->length < b_c || goal->missionary->length < b_m) {
+                printf("�ο��� ���� �ʽ��ϴ�.\n");
+                continue;
+            }
+            mc_move(goal->cannibal, init->cannibal, b_c);         //������ �̵�
+            mc_move(goal->missionary, init->missionary, b_m);    //������ �̵�
+            lr++;
+            if (safety_check(init, goal) == 1)                //�������� �˻��� 
+            {                                                    //�����ϴٸ� ���� ���, count����
+                show_state(*init, *goal);
+                (*count)++;
+            }
+            else
+            {                                                    //�̵� ���н� ���α׷� ����
+                printf("�̵��� �����Ͽ����ϴ�.\n");
+                exit(1);
+            }
+        }
+
+        if (goal_check(goal, num) == 1)                //��ǥ �޼��� ���� Ż��
+            break;
+    }
+}
