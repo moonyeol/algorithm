@@ -1,37 +1,29 @@
+def dfs(banned, index, tmp=set(), lists=[]):
+    if index == len(banned):
+        if tmp not in lists:
+            lists.append(tmp)
+        return
+    for i in banned[index]:
+        if i not in tmp:
+            dfs(banned, index + 1, tmp | set([i]), lists)
+    return len(lists)
+
+
 def solution(user_id, banned_id):
+    lists = []
     answer = 0
-    dict = {}
-    dict2 = {}
-    index = []
-    breakbool = False
-    for i in user_id:
-        if len(i) in dict:
-            dict[len(i)].append(i)
-        else:
-            dict[len(i)] = []
-            dict[len(i)].append(i)
+    num = 0
     for i in banned_id:
-        if len(i) in dict2:
-            dict2[len(i)].append(i)
-        else:
-            dict2[len(i)] = []
-            dict2[len(i)].append(i)
-    for i in banned_id:
-        for j in dict[len(i)]:
-            index.append(i.find('*'))
-            if i[:index[-1]] != j[:index[-1]]:
-                while index[-1] < len(i):
-                    index.append(i.find('*', index[-1]))
-                    if index[-1] == -1:
+        tmp = []
+        for j in user_id:
+            if len(i) == len(j):
+                for k in range(len(i)):
+                    if (i[k] != j[k]) & (i[k] != '*'):
                         break
-                    if i[index[-2] + 1:index[-1]] != j[index[-2] + 1:index[-1]]:
-                        breakbool = True
-            if breakbool:
-                break
-            answer += 1
-            dict[len(i)].remove(j)
-            index = []
+                else:
+                    tmp.append(j)
+        lists.append(tmp)
+
+    answer = dfs(lists, 0)
 
     return answer
-
-#도저히 푸는 방법이 생각안나서 3중루프 썻는데 역시 오답이다
